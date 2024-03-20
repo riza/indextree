@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	log "github.com/sirupsen/logrus"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -45,12 +45,12 @@ func main() {
 		options.Extensions,
 		"")
 	if err != nil {
-		log.Error(err)
+		log.Fatal(err)
 	}
 }
 
 func showBanner() {
-	log.Printf(banner, version)
+	fmt.Printf(banner, version)
 }
 
 func parseOptions() *Options {
@@ -91,7 +91,7 @@ func crawl(url string, extensions []string, prefix string) error {
 			if strings.HasSuffix(u, "/") {
 				err = crawl(u, extensions, prefix+"    ")
 				if err != nil {
-					log.Error(err)
+					log.Print(err)
 				}
 			}
 		} else {
@@ -99,7 +99,7 @@ func crawl(url string, extensions []string, prefix string) error {
 			if strings.HasSuffix(u, "/") {
 				err = crawl(u, extensions, prefix+"│   ")
 				if err != nil {
-					log.Error(err)
+					log.Print(err)
 				}
 			}
 		}
