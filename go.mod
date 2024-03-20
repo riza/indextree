@@ -1,4 +1,4 @@
-module indextree
+module github.com/riza/indextree
 
 go 1.22
 
