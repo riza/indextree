@@ -15,7 +15,7 @@
 </p>
 
 # Installation
-indextree requires **go1.17** to install successfully. Run the following command to get the repo -
+indextree requires **go1.22** to install successfully. Run the following command to get the repo -
 
 ```sh
 go install github.com/riza/indextree@latest
