@@ -45,6 +45,14 @@ Usage of indextree:
 │   └── http://127.0.0.1/secrets/passwords.xlsx
 │   └── http://127.0.0.1/secrets/private_key.txt
 ```
+## Disclaimer
+
+This tool is developed and shared solely for educational and research purposes. The intention behind its creation is to foster learning and exploration within the field of cybersecurity. The tool is not intended for any malicious or illegal activities.
+
+By accessing and using this tool, you agree to use it responsibly and in compliance with all applicable laws and regulations. The developers of this tool shall not be held liable for any misuse or damage caused by its usage.
+
+Please use this tool ethically and responsibly, and only on systems and networks that you have permission to test. 
+
 
 ## Donate
 
