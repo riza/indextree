@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 const (
@@ -40,10 +41,13 @@ func main() {
 		showBanner()
 	}
 
+	// Track visited URLs to avoid loops
+	visited := make(map[string]bool)
+
 	err := crawl(
 		options.URL,
 		options.Extensions,
-		"")
+		"", visited)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,6 +71,11 @@ func parseOptions() *Options {
 		os.Exit(1)
 	}
 
+	// Add https:// if not present, to avoid errors
+	if !strings.HasPrefix(options.URL, "http") {
+		options.URL = "https://" + options.URL
+	}
+
 	if extensions != "" {
 		options.Extensions = strings.Split(extensions, ",")
 	}
@@ -74,7 +83,11 @@ func parseOptions() *Options {
 	return options
 }
 
-func crawl(url string, extensions []string, prefix string) error {
+func crawl(url string, extensions []string, prefix string, visited map[string]bool) error {
+	if visited[url] {
+		return nil // Skip already visited URL
+	}
+
 	body, err := get(url)
 	if err != nil {
 		return fmt.Errorf("error getting index: %w", err)
@@ -86,10 +99,11 @@ func crawl(url string, extensions []string, prefix string) error {
 	}
 
 	for i, u := range urls {
+		visited[u] = true
 		if i == len(urls)-1 {
 			fmt.Println(prefix + "└── " + u)
 			if strings.HasSuffix(u, "/") {
-				err = crawl(u, extensions, prefix+"    ")
+				err = crawl(u, extensions, prefix+"    ", visited)
 				if err != nil {
 					log.Print(err)
 				}
@@ -97,7 +111,7 @@ func crawl(url string, extensions []string, prefix string) error {
 		} else {
 			fmt.Println(prefix + "├── " + u)
 			if strings.HasSuffix(u, "/") {
-				err = crawl(u, extensions, prefix+"│   ")
+				err = crawl(u, extensions, prefix+"│   ", visited)
 				if err != nil {
 					log.Print(err)
 				}
@@ -138,7 +152,7 @@ func parseIndex(url, prefix string, extensions []string, body io.Reader) ([]stri
 		href, _ := s.Attr("href")
 
 		//handle files
-		if s.Text()[len(s.Text())-1:] != "/" {
+		if len(s.Text()) > 0 && s.Text()[len(s.Text())-1:] != "/" {
 			//filter by extensions
 			if len(extensions) > 0 {
 				pos := strings.LastIndex(url+href, ".")
