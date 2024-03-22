@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 const (
@@ -67,6 +68,11 @@ func parseOptions() *Options {
 		os.Exit(1)
 	}
 
+	// Add https:// if not present, to avoid errors
+	if !strings.HasPrefix(options.URL, "http") {
+		options.URL = "https://" + options.URL
+	}
+
 	if extensions != "" {
 		options.Extensions = strings.Split(extensions, ",")
 	}
@@ -79,6 +85,7 @@ func crawl(url string, extensions []string, prefix string) error {
 	if err != nil {
 		return fmt.Errorf("error getting index: %w", err)
 	}
+	defer body.Close()
 
 	urls, err := parseIndex(url, prefix, extensions, body)
 	if err != nil {
@@ -126,19 +133,19 @@ func parseIndex(url, prefix string, extensions []string, body io.Reader) ([]stri
 	urls := make([]string, 0)
 
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
-		//skip parent directory
-		if strings.Contains(s.Text(), " Parent Directory") {
-			return
-		}
-
 		if url[len(url)-1:] != "/" {
 			url += "/"
 		}
 
+		//skip parent directory
 		href, _ := s.Attr("href")
+		if href == "../" { // parent directory
+			fmt.Println(prefix + "└── " + url + href)
+			return
+		}
 
 		//handle files
-		if s.Text()[len(s.Text())-1:] != "/" {
+		if len(s.Text()) > 0 && s.Text()[len(s.Text())-1:] != "/" {
 			//filter by extensions
 			if len(extensions) > 0 {
 				pos := strings.LastIndex(url+href, ".")
