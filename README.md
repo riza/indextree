@@ -14,6 +14,12 @@
   </a>
 </p>
 
+# What is indextree actually?
+
+*indextree* is a tool for analysing and filtering the "directory listing" pages of web servers, as shown in the screenshot below.
+
+<img src="https://raw.githubusercontent.com/riza/indextree/main/res/dirlist.png">
+
 # Installation
 indextree requires **go1.22** to install successfully. Run the following command to get the repo -
 
