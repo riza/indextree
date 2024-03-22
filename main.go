@@ -41,13 +41,10 @@ func main() {
 		showBanner()
 	}
 
-	// Track visited URLs to avoid loops
-	visited := make(map[string]bool)
-
 	err := crawl(
 		options.URL,
 		options.Extensions,
-		"", visited)
+		"")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,15 +80,12 @@ func parseOptions() *Options {
 	return options
 }
 
-func crawl(url string, extensions []string, prefix string, visited map[string]bool) error {
-	if visited[url] {
-		return nil // Skip already visited URL
-	}
-
+func crawl(url string, extensions []string, prefix string) error {
 	body, err := get(url)
 	if err != nil {
 		return fmt.Errorf("error getting index: %w", err)
 	}
+	defer body.Close()
 
 	urls, err := parseIndex(url, prefix, extensions, body)
 	if err != nil {
@@ -99,11 +93,10 @@ func crawl(url string, extensions []string, prefix string, visited map[string]bo
 	}
 
 	for i, u := range urls {
-		visited[u] = true
 		if i == len(urls)-1 {
 			fmt.Println(prefix + "└── " + u)
 			if strings.HasSuffix(u, "/") {
-				err = crawl(u, extensions, prefix+"    ", visited)
+				err = crawl(u, extensions, prefix+"    ")
 				if err != nil {
 					log.Print(err)
 				}
@@ -111,7 +104,7 @@ func crawl(url string, extensions []string, prefix string, visited map[string]bo
 		} else {
 			fmt.Println(prefix + "├── " + u)
 			if strings.HasSuffix(u, "/") {
-				err = crawl(u, extensions, prefix+"│   ", visited)
+				err = crawl(u, extensions, prefix+"│   ")
 				if err != nil {
 					log.Print(err)
 				}
@@ -140,16 +133,16 @@ func parseIndex(url, prefix string, extensions []string, body io.Reader) ([]stri
 	urls := make([]string, 0)
 
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
-		//skip parent directory
-		if strings.Contains(s.Text(), " Parent Directory") {
-			return
-		}
-
 		if url[len(url)-1:] != "/" {
 			url += "/"
 		}
 
+		//skip parent directory
 		href, _ := s.Attr("href")
+		if href == "../" { // parent directory
+			fmt.Println(prefix + "└── " + url + href)
+			return
+		}
 
 		//handle files
 		if len(s.Text()) > 0 && s.Text()[len(s.Text())-1:] != "/" {
