@@ -34,6 +34,8 @@ Usage of indextree:
   -b    show banner (default true)
   -e string
         extensions to filter, example: -e jpg,png,gif
+  -m string
+        match in url, example: -mu admin,login
   -u string
         url to parse index
 ```
