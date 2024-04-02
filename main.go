@@ -29,12 +29,15 @@ const (
 
 	treeBranch = `├── `
 	treeEnd    = `└── `
+	treeSuffix = `│   `
 )
 
 type (
 	Options struct {
-		URL    string
-		Banner bool
+		URL           string
+		Banner        bool
+		Tree          bool
+		ShowOnlyFiles bool
 
 		Extensions []string
 		Matchers   []string
@@ -54,6 +57,17 @@ func main() {
 
 	go func() {
 		for l := range line {
+			if !options.Tree {
+				l = strings.ReplaceAll(l, treeBranch, "")
+				l = strings.ReplaceAll(l, treeEnd, "")
+				l = strings.ReplaceAll(l, treeSuffix, "")
+				l = strings.ReplaceAll(l, "    ", "")
+			}
+
+			if options.ShowOnlyFiles && strings.HasSuffix(l, "/") {
+				continue
+			}
+
 			fmt.Println(l)
 		}
 	}()
@@ -90,6 +104,8 @@ func parseOptions() *Options {
 	flag.StringVar(&extensions, "e", "", "extensions to filter, example: -e jpg,png,gif")
 	flag.StringVar(&matchers, "m", "", "match in url, example: -mu admin,login")
 	flag.BoolVar(&options.Banner, "b", true, "show banner")
+	flag.BoolVar(&options.Tree, "t", true, "show tree")
+	flag.BoolVar(&options.ShowOnlyFiles, "of", false, "show only files")
 
 	flag.Parse()
 
@@ -132,7 +148,7 @@ func crawl(line chan string, wg *sync.WaitGroup, url string, extensions, matcher
 	for i, u := range urls {
 		u = url + u
 
-		suffix := "│   "
+		suffix := treeSuffix
 		if i == len(urls)-1 {
 			suffix = "    "
 		}
