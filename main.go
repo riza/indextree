@@ -25,7 +25,7 @@ const (
 /_/_/ /_/\__,_/\___/_/|_|\__/_/   \___/\___/ %s
 
 `
-	version = `v1.0.2`
+	version = `v1.0.3`
 
 	treeBranch = `├── `
 	treeEnd    = `└── `
