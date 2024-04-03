@@ -25,7 +25,7 @@ const (
 /_/_/ /_/\__,_/\___/_/|_|\__/_/   \___/\___/ %s
 
 `
-	version = `v1.0.3`
+	version = `v1.0.4`
 
 	treeBranch = `├── `
 	treeEnd    = `└── `
@@ -181,7 +181,7 @@ func crawl(line chan string, wg *sync.WaitGroup, url string, extensions, matcher
 			if len(ext) > 0 {
 				ext = ext[1:]
 				for _, e := range extensions {
-					if e == ext {
+					if strings.ToLower(e) == strings.ToLower(ext) {
 						line <- prefix + treeEnd + u
 						continue
 					}
