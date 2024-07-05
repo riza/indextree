@@ -25,7 +25,7 @@ const (
 /_/_/ /_/\__,_/\___/_/|_|\__/_/   \___/\___/ %s
 
 `
-	version = `v1.0.4`
+	version = `v1.0.5`
 
 	treeBranch = `├── `
 	treeEnd    = `└── `
@@ -220,7 +220,7 @@ func parseIndex(body io.Reader) ([]string, error) {
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
 		//skip parent directory
 		href, _ := s.Attr("href")
-		if strings.HasPrefix(href, "?") || href == "../" || href == "/" || strings.Contains(strings.ToLower(s.Text()), "parent") { // parent directory
+		if strings.Contains(href, "/../") || strings.HasPrefix(href, "?") || href == "../" || href == "/" || strings.Contains(strings.ToLower(s.Text()), "parent") { // parent directory
 			return
 		}
 
