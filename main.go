@@ -25,7 +25,7 @@ const (
 /_/_/ /_/\__,_/\___/_/|_|\__/_/   \___/\___/ %s
 
 `
-	version = `v1.0.6`
+	version = `v1.0.7`
 
 	treeBranch = `├── `
 	treeEnd    = `└── `
@@ -135,6 +135,7 @@ func crawl(line chan string, wg *sync.WaitGroup, url string, extensions, matcher
 	defer wg.Done()
 
 	url = strings.ReplaceAll(url, "//", "/")
+	url = strings.ReplaceAll(url, ":/", "://")
 
 	body, err := get(url)
 	if err != nil {
