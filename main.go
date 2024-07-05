@@ -25,7 +25,7 @@ const (
 /_/_/ /_/\__,_/\___/_/|_|\__/_/   \___/\___/ %s
 
 `
-	version = `v1.0.5`
+	version = `v1.0.6`
 
 	treeBranch = `├── `
 	treeEnd    = `└── `
@@ -133,6 +133,8 @@ func parseOptions() *Options {
 func crawl(line chan string, wg *sync.WaitGroup, url string, extensions, matchers []string, prefix string) error {
 	wg.Add(1)
 	defer wg.Done()
+
+	url = strings.ReplaceAll(url, "//", "/")
 
 	body, err := get(url)
 	if err != nil {
