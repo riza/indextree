@@ -32,10 +32,14 @@ go install github.com/riza/indextree@latest
 ```sh
 Usage of indextree:
   -b    show banner (default true)
+  -d    directory mode: only show matching directories
   -e string
         extensions to filter, example: -e jpg,png,gif
+  -f    file mode: only show matching files
   -m string
         match in url, example: -mu admin,login
+  -of   show only files
+  -t    show tree (default true)
   -u string
         url to parse index
 ```
@@ -53,6 +57,21 @@ Usage of indextree:
 │   └── http://127.0.0.1/secrets/passwords.xlsx
 │   └── http://127.0.0.1/secrets/private_key.txt
 ```
+
+# Directory Mode & File Mode
+
+You can use directory mode and file mode to focus on specific content:
+
+```sh
+# Only show directories that match "admin"
+➤ indextree -u http://127.0.0.1/ -m admin -d
+
+# Only show files that match "password"
+➤ indextree -u http://127.0.0.1/ -m password -f
+```
+
+These modes help you to focus on either directories or files that match your search criteria. The tool also includes protection against infinite loops when scanning recursive directory structures.
+
 ## Disclaimer
 
 This tool is developed and shared solely for educational and research purposes. The intention behind its creation is to foster learning and exploration within the field of cybersecurity. The tool is not intended for any malicious or illegal activities.

@@ -25,7 +25,7 @@ const (
 /_/_/ /_/\__,_/\___/_/|_|\__/_/   \___/\___/ %s
 
 `
-	version = `v1.0.7`
+	version = `v1.0.8`
 
 	treeBranch = `├── `
 	treeEnd    = `└── `
@@ -38,6 +38,8 @@ type (
 		Banner        bool
 		Tree          bool
 		ShowOnlyFiles bool
+		DirectoryMode bool
+		FileMode      bool
 
 		Extensions []string
 		Matchers   []string
@@ -54,6 +56,8 @@ func main() {
 	wg := &sync.WaitGroup{}
 
 	line := make(chan string)
+	// Map to store visited URLs to prevent infinite loops
+	visitedURLs := make(map[string]bool)
 
 	go func() {
 		for l := range line {
@@ -78,7 +82,10 @@ func main() {
 		options.URL,
 		options.Extensions,
 		options.Matchers,
-		"")
+		"",
+		visitedURLs,
+		options.DirectoryMode,
+		options.FileMode)
 
 	if err != nil {
 		log.Fatal(err)
@@ -106,6 +113,8 @@ func parseOptions() *Options {
 	flag.BoolVar(&options.Banner, "b", true, "show banner")
 	flag.BoolVar(&options.Tree, "t", true, "show tree")
 	flag.BoolVar(&options.ShowOnlyFiles, "of", false, "show only files")
+	flag.BoolVar(&options.DirectoryMode, "d", false, "directory mode: only show matching directories")
+	flag.BoolVar(&options.FileMode, "f", false, "file mode: only show matching files")
 
 	flag.Parse()
 
@@ -130,12 +139,17 @@ func parseOptions() *Options {
 	return options
 }
 
-func crawl(line chan string, wg *sync.WaitGroup, url string, extensions, matchers []string, prefix string) error {
+func crawl(line chan string, wg *sync.WaitGroup, url string, extensions, matchers []string, prefix string, visitedURLs map[string]bool, directoryMode, fileMode bool) error {
 	wg.Add(1)
 	defer wg.Done()
 
 	url = strings.ReplaceAll(url, "//", "/")
 	url = strings.ReplaceAll(url, ":/", "://")
+
+	if visitedURLs[url] {
+		return nil
+	}
+	visitedURLs[url] = true
 
 	body, err := get(url)
 	if err != nil {
@@ -158,42 +172,69 @@ func crawl(line chan string, wg *sync.WaitGroup, url string, extensions, matcher
 
 		//is dir
 		if strings.HasSuffix(u, "/") {
-			line <- prefix + treeBranch + u
+			// Directory mode check for matches
+			if directoryMode {
+				matchFound := false
+				// If matchers are provided, check if directory matches
+				if len(matchers) > 0 {
+					for _, m := range matchers {
+						if isCaseInsensitiveContains(u, m) {
+							matchFound = true
+							break
+						}
+					}
+				} else {
+					// If no matchers are provided, show all directories
+					matchFound = true
+				}
 
-			err = crawl(line, wg, u, extensions, matchers, prefix+suffix)
+				if matchFound {
+					line <- prefix + treeBranch + u
+				}
+			} else if !fileMode {
+				// If neither directory mode nor file mode is active, keep original behavior
+				line <- prefix + treeBranch + u
+			}
+
+			err = crawl(line, wg, u, extensions, matchers, prefix+suffix, visitedURLs, directoryMode, fileMode)
 			if err != nil {
 				log.Print(err)
 			}
 			continue
 		}
 
-		//is match with matchers
-		if len(matchers) > 0 {
-			for _, m := range matchers {
-				if strings.Contains(strings.ToLower(u), strings.ToLower(m)) {
-					line <- prefix + treeBranch + u
-					continue
-				}
-			}
-			continue
-		}
-
-		//is not dir
-		if !strings.HasSuffix(u, "/") && len(extensions) > 0 {
-			ext := filepath.Ext(u)
-			if len(ext) > 0 {
-				ext = ext[1:]
-				for _, e := range extensions {
-					if strings.ToLower(e) == strings.ToLower(ext) {
-						line <- prefix + treeEnd + u
-						continue
+		// File mode or normal mode processing
+		if fileMode || !directoryMode {
+			//is match with matchers
+			if len(matchers) > 0 {
+				for _, m := range matchers {
+					if isCaseInsensitiveContains(u, m) {
+						line <- prefix + treeBranch + u
+						break
 					}
 				}
+				continue
 			}
-			continue
-		}
 
-		line <- prefix + treeBranch + u
+			//is not dir
+			if !strings.HasSuffix(u, "/") && len(extensions) > 0 {
+				ext := filepath.Ext(u)
+				if len(ext) > 0 {
+					ext = ext[1:]
+					for _, e := range extensions {
+						if strings.EqualFold(e, ext) {
+							line <- prefix + treeEnd + u
+							break
+						}
+					}
+				}
+				continue
+			}
+
+			if !fileMode {
+				line <- prefix + treeBranch + u
+			}
+		}
 	}
 
 	return nil
@@ -223,7 +264,7 @@ func parseIndex(body io.Reader) ([]string, error) {
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
 		//skip parent directory
 		href, _ := s.Attr("href")
-		if strings.Contains(href, "/../") || strings.HasPrefix(href, "?") || href == "../" || href == "/" || strings.Contains(strings.ToLower(s.Text()), "parent") { // parent directory
+		if strings.Contains(href, "/../") || strings.HasPrefix(href, "?") || href == "../" || href == "/" || isCaseInsensitiveContains(s.Text(), "parent") { // parent directory
 			return
 		}
 
@@ -231,4 +272,12 @@ func parseIndex(body io.Reader) ([]string, error) {
 	})
 
 	return urls, nil
+}
+
+// isCaseInsensitiveContains checks if a string contains another string in a case-insensitive manner
+func isCaseInsensitiveContains(s, substr string) bool {
+	return strings.Contains(
+		strings.ToLower(s),
+		strings.ToLower(substr),
+	)
 }
